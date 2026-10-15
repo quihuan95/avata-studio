@@ -4,7 +4,9 @@ The production site uses one domain: Laravel serves `/api/*`, while the React bu
 
 ## 1. Prepare the application
 
-On the server, install PHP 8.2 or newer with SQLite (or configure MySQL), Composer, and Node.js 20 or newer.
+On the server, install PHP 8.2 or newer with the `pdo_mysql`, `mbstring`, `fileinfo`, and `openssl` extensions, plus Composer and Node.js 20 or newer.
+
+Create a MySQL database in **aaPanel → Databases → Add database**. Use a dedicated database and user, for example `avatar_studio`, and keep the generated password.
 
 Build the frontend against the same-domain API:
 
@@ -20,13 +22,36 @@ Prepare Laravel:
 ```bash
 cd ../backend
 composer install --no-dev --optimize-autoloader
+cp .env.example .env
+php artisan key:generate
+```
+
+Before migrating, set the production values in `backend/.env`:
+
+```dotenv
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://your-domain.com
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=avatar_studio
+DB_USERNAME=avatar_studio
+DB_PASSWORD=your-aaPanel-database-password
+
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD_HASH='$2y$...'
+```
+
+Generate the admin password hash with `php -r "echo password_hash('your-password', PASSWORD_DEFAULT), PHP_EOL;"`; never store the plain admin password in `.env`. After saving the MySQL settings, finish Laravel setup:
+
+```bash
 php artisan migrate --force
 php artisan storage:link
 php artisan config:cache
 php artisan route:cache
 ```
-
-Set production values in `backend/.env`, particularly `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL`, database settings, `ADMIN_USERNAME`, and `ADMIN_PASSWORD_HASH`. Generate a password hash with `php -r "echo password_hash('your-password', PASSWORD_DEFAULT);"`; never store the plain password in `.env`.
 
 ## 2. Configure the aaPanel website
 

@@ -35,3 +35,5 @@ cp -R dist/. ../backend/public/
 ```
 
 Trên aaPanel, trỏ website root vào `backend/public`. Xem cấu hình Nginx và các bước Laravel trong `docs/AAPANEL_DEPLOY.md`.
+
+Production sử dụng MySQL. Tạo database và user riêng trong aaPanel, sau đó điền các biến `DB_*` trong `backend/.env` trước khi chạy migration.
