@@ -733,7 +733,7 @@ input[type="range"] {
   padding: 10px;
   color: #566b87;
 }
-.campaign-row button:last-child {
+.campaign-row button[title="Xóa"] {
   color: #d65c67;
 }
 .count {

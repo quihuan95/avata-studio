@@ -11,5 +11,6 @@ Route::middleware('throttle:5,1')->post('/admin/login', [CampaignController::cla
 Route::middleware('throttle:30,1')->group(function () {
     Route::get('/admin/check', [CampaignController::class, 'check']);
     Route::post('/admin/campaigns', [CampaignController::class, 'store']);
+    Route::post('/admin/campaigns/{campaign}', [CampaignController::class, 'update']);
     Route::delete('/admin/campaigns/{campaign}', [CampaignController::class, 'destroy']);
 });

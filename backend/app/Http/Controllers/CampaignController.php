@@ -6,6 +6,7 @@ use App\Models\Campaign;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class CampaignController extends Controller
 {
@@ -67,6 +68,36 @@ class CampaignController extends Controller
         $campaign = Campaign::create(['name' => $data['name'], 'subtitle' => $data['subtitle'] ?? '', 'slug' => $data['slug'], 'frame_path' => $path, 'active' => true]);
 
         return response()->json(['data' => $campaign], 201);
+    }
+
+    public function update(Request $request, Campaign $campaign)
+    {
+        $this->guard($request);
+        $data = $request->validate([
+            'name' => 'required|string|max:150',
+            'subtitle' => 'nullable|string|max:255',
+            'slug' => ['required', 'alpha_dash', 'max:120', Rule::unique('campaigns', 'slug')->ignore($campaign->id)],
+            'frame' => 'nullable|file|mimes:png,svg|max:5120',
+            'frame_url' => 'nullable|url|starts_with:https://',
+        ]);
+
+        $oldPath = $campaign->frame_path;
+        if ($request->hasFile('frame')) {
+            $campaign->frame_path = $request->file('frame')->store('frames', 'public');
+        } elseif (! empty($data['frame_url'])) {
+            $campaign->frame_path = $data['frame_url'];
+        }
+
+        $campaign->name = $data['name'];
+        $campaign->subtitle = $data['subtitle'] ?? '';
+        $campaign->slug = $data['slug'];
+        $campaign->save();
+
+        if ($oldPath !== $campaign->frame_path && ! str_starts_with($oldPath, 'https://')) {
+            Storage::disk('public')->delete($oldPath);
+        }
+
+        return response()->json(['data' => $campaign->fresh()]);
     }
 
     public function destroy(Request $request, Campaign $campaign)

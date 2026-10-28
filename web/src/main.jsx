@@ -8,7 +8,9 @@ import {
   ImagePlus,
   LayoutDashboard,
   Plus,
+  Pencil,
   Trash2,
+  X,
   ArrowLeft,
   ExternalLink,
   Check,
@@ -104,6 +106,7 @@ function App() {
     slug: "",
     frame_url: "",
   });
+  const [editingCampaign, setEditingCampaign] = useState(null);
   const [frameFile, setFrameFile] = useState(null);
   const [dragging, setDragging] = useState(false);
   const canvas = useRef(null),
@@ -265,10 +268,28 @@ function App() {
     setUserImage(null);
     history.pushState({}, "", "/");
   };
+  const resetCampaignForm = () => {
+    setForm({ name: "", subtitle: "", slug: "", frame_url: "" });
+    setFrameFile(null);
+    setEditingCampaign(null);
+    if (frameInput.current) frameInput.current.value = "";
+  };
+  const editCampaign = (campaign) => {
+    setEditingCampaign(campaign);
+    setForm({
+      name: campaign.name || "",
+      subtitle: campaign.subtitle || "",
+      slug: campaign.slug || "",
+      frame_url: campaign.frame_url || "",
+    });
+    setFrameFile(null);
+    if (frameInput.current) frameInput.current.value = "";
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
   const submitCampaign = async (e) => {
     e.preventDefault();
     if (!form.name.trim()) return notify("Nhập tên chiến dịch");
-    if (!frameFile && !form.frame_url)
+    if (!editingCampaign && !frameFile && !form.frame_url)
       return notify("Hãy chọn file PNG hoặc SVG làm khung");
     try {
       setBusy(true);
@@ -289,13 +310,25 @@ function App() {
               .replace(/(^-|-$)/g, ""),
         );
         if (frameFile) fd.append("frame", frameFile);
-        else fd.append("frame_url", frame_url);
-        const data = await request("/admin/campaigns", {
+        else if (!editingCampaign) fd.append("frame_url", frame_url);
+        const data = await request(
+          editingCampaign
+            ? `/admin/campaigns/${editingCampaign.id}`
+            : "/admin/campaigns",
+          {
           method: "POST",
           headers: { Authorization: `Bearer ${adminAccessToken}` },
           body: fd,
-        });
-        setCampaigns((a) => [data.data || data, ...a]);
+          },
+        );
+        const saved = data.data || data;
+        setCampaigns((current) =>
+          editingCampaign
+            ? current.map((campaign) =>
+                campaign.id === editingCampaign.id ? saved : campaign,
+              )
+            : [saved, ...current],
+        );
       } else {
         if (frameFile) {
           frame_url = await new Promise((resolve, reject) => {
@@ -309,13 +342,17 @@ function App() {
           ...form,
           frame_url,
           slug: form.slug || "campaign-" + Date.now(),
-          id: Date.now(),
+          id: editingCampaign?.id || Date.now(),
           active: true,
-          views: 0,
-          downloads: 0,
+          views: editingCampaign?.views || 0,
+          downloads: editingCampaign?.downloads || 0,
         };
         setCampaigns((prev) => {
-          const n = [c, ...prev];
+          const n = editingCampaign
+            ? prev.map((campaign) =>
+                campaign.id === editingCampaign.id ? c : campaign,
+              )
+            : [c, ...prev];
           try {
             storeLocal(n);
           } catch {
@@ -324,10 +361,9 @@ function App() {
           return n;
         });
       }
-      setForm({ name: "", subtitle: "", slug: "", frame_url: "" });
-      setFrameFile(null);
-      if (frameInput.current) frameInput.current.value = "";
-      notify("Đã tạo chiến dịch");
+      const wasEditing = Boolean(editingCampaign);
+      resetCampaignForm();
+      notify(wasEditing ? "Đã cập nhật chiến dịch" : "Đã tạo chiến dịch");
     } catch (err) {
       notify(err.message);
     } finally {
@@ -347,6 +383,7 @@ function App() {
         if (!backend) storeLocal(n);
         return n;
       });
+      if (editingCampaign?.id === c.id) resetCampaignForm();
       notify("Đã xóa");
     } catch (e) {
       notify(e.message);
@@ -486,7 +523,8 @@ function App() {
             <div className="admin-grid">
               <form className="panel form-panel" onSubmit={submitCampaign}>
                 <h2>
-                  <Plus size={20} /> Tạo chiến dịch
+                  {editingCampaign ? <Pencil size={20} /> : <Plus size={20} />}
+                  {editingCampaign ? "Chỉnh sửa chiến dịch" : "Tạo chiến dịch"}
                 </h2>
                 <label>
                   Tên sự kiện
@@ -532,12 +570,28 @@ function App() {
                   />
                 </label>
                 <div className="muted small">
-                  Ưu tiên ảnh 1080 × 1080 px. Phần giữa khung cần trong suốt.
+                  {editingCampaign
+                    ? "Để trống nếu muốn giữ nguyên khung hiện tại."
+                    : "Ưu tiên ảnh 1080 × 1080 px. Phần giữa khung cần trong suốt."}
                 </div>
                 <button disabled={busy} className="primary full" type="submit">
-                  <Plus size={18} />
-                  {busy ? "Đang lưu..." : "Tạo chiến dịch"}
+                  {editingCampaign ? <Pencil size={18} /> : <Plus size={18} />}
+                  {busy
+                    ? "Đang lưu..."
+                    : editingCampaign
+                      ? "Lưu thay đổi"
+                      : "Tạo chiến dịch"}
                 </button>
+                {editingCampaign && (
+                  <button
+                    disabled={busy}
+                    className="secondary full"
+                    type="button"
+                    onClick={resetCampaignForm}
+                  >
+                    <X size={18} /> Hủy chỉnh sửa
+                  </button>
+                )}
               </form>
               <div className="panel">
                 <h2>
@@ -556,6 +610,9 @@ function App() {
                           /c/{c.slug} · {c.downloads || 0} lượt tải
                         </small>
                       </div>
+                      <button title="Chỉnh sửa" onClick={() => editCampaign(c)}>
+                        <Pencil size={17} />
+                      </button>
                       <button
                         title="Xem"
                         onClick={() => {
