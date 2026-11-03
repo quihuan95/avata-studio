@@ -56,7 +56,7 @@ class CampaignController extends Controller
     public function store(Request $request)
     {
         $this->guard($request);
-        $data = $request->validate(['name' => 'required|string|max:150', 'subtitle' => 'nullable|string|max:255', 'slug' => 'required|alpha_dash|max:120|unique:campaigns,slug', 'frame' => 'required_without:frame_url|file|mimes:png,svg|max:5120', 'frame_url' => 'required_without:frame|url|starts_with:https://']);
+        $data = $request->validate(['name' => 'required|string|max:150', 'subtitle' => 'nullable|string|max:255', 'subtitle_2' => 'nullable|string|max:255', 'slug' => 'required|alpha_dash|max:120|unique:campaigns,slug', 'frame' => 'required_without:frame_url|file|mimes:png,svg|max:5120', 'frame_url' => 'required_without:frame|url|starts_with:https://']);
         if ($request->hasFile('frame')) {
             $path = $request->file('frame')->store('frames', 'public');
         } else {
@@ -65,7 +65,7 @@ class CampaignController extends Controller
                 abort(422, 'Frame URL must use HTTPS');
             }
         }
-        $campaign = Campaign::create(['name' => $data['name'], 'subtitle' => $data['subtitle'] ?? '', 'slug' => $data['slug'], 'frame_path' => $path, 'active' => true]);
+        $campaign = Campaign::create(['name' => $data['name'], 'subtitle' => $data['subtitle'] ?? '', 'subtitle_2' => $data['subtitle_2'] ?? '', 'slug' => $data['slug'], 'frame_path' => $path, 'active' => true]);
 
         return response()->json(['data' => $campaign], 201);
     }
@@ -76,6 +76,7 @@ class CampaignController extends Controller
         $data = $request->validate([
             'name' => 'required|string|max:150',
             'subtitle' => 'nullable|string|max:255',
+            'subtitle_2' => 'nullable|string|max:255',
             'slug' => ['required', 'alpha_dash', 'max:120', Rule::unique('campaigns', 'slug')->ignore($campaign->id)],
             'frame' => 'nullable|file|mimes:png,svg|max:5120',
             'frame_url' => 'nullable|url|starts_with:https://',
@@ -90,6 +91,7 @@ class CampaignController extends Controller
 
         $campaign->name = $data['name'];
         $campaign->subtitle = $data['subtitle'] ?? '';
+        $campaign->subtitle_2 = $data['subtitle_2'] ?? '';
         $campaign->slug = $data['slug'];
         $campaign->save();
 

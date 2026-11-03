@@ -21,6 +21,7 @@ class CampaignUpdateTest extends TestCase
         $campaign = Campaign::create([
             'name' => 'Old name',
             'subtitle' => 'Old subtitle',
+            'subtitle_2' => 'Old editor title',
             'slug' => 'old-slug',
             'frame_path' => 'frames/original.png',
             'active' => true,
@@ -34,17 +35,20 @@ class CampaignUpdateTest extends TestCase
         $response = $this->withToken($token)->postJson("/api/admin/campaigns/{$campaign->id}", [
             'name' => 'New name',
             'subtitle' => 'New subtitle',
+            'subtitle_2' => 'New editor title',
             'slug' => 'new-slug',
         ]);
 
         $response
             ->assertOk()
             ->assertJsonPath('data.name', 'New name')
+            ->assertJsonPath('data.subtitle_2', 'New editor title')
             ->assertJsonPath('data.slug', 'new-slug');
         $this->assertDatabaseHas('campaigns', [
             'id' => $campaign->id,
             'name' => 'New name',
             'subtitle' => 'New subtitle',
+            'subtitle_2' => 'New editor title',
             'slug' => 'new-slug',
             'frame_path' => 'frames/original.png',
         ]);

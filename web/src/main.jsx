@@ -28,6 +28,7 @@ const localSeed = [
     slug: "hbg-customer-conference-2026",
     name: "Hội nghị khách hàng The HBG 2026",
     subtitle: "Chất lượng tạo danh tiếng",
+    subtitle_2: "Biến khung hình thành dấu ấn của bạn.",
     frame_url: "/frames/welcome.svg",
     active: true,
     views: 0,
@@ -38,6 +39,7 @@ const localSeed = [
     slug: "anniversary",
     name: "Kỷ niệm thành lập",
     subtitle: "Tự hào hành trình kết nối",
+    subtitle_2: "Biến khung hình thành dấu ấn của bạn.",
     frame_url: "/frames/anniversary.svg",
     active: true,
     views: 0,
@@ -103,6 +105,7 @@ function App() {
   const [form, setForm] = useState({
     name: "",
     subtitle: "",
+    subtitle_2: "",
     slug: "",
     frame_url: "",
   });
@@ -269,7 +272,7 @@ function App() {
     history.pushState({}, "", "/");
   };
   const resetCampaignForm = () => {
-    setForm({ name: "", subtitle: "", slug: "", frame_url: "" });
+    setForm({ name: "", subtitle: "", subtitle_2: "", slug: "", frame_url: "" });
     setFrameFile(null);
     setEditingCampaign(null);
     if (frameInput.current) frameInput.current.value = "";
@@ -279,6 +282,7 @@ function App() {
     setForm({
       name: campaign.name || "",
       subtitle: campaign.subtitle || "",
+      subtitle_2: campaign.subtitle_2 || "",
       slug: campaign.slug || "",
       frame_url: campaign.frame_url || "",
     });
@@ -298,6 +302,7 @@ function App() {
         const fd = new FormData();
         fd.append("name", form.name);
         fd.append("subtitle", form.subtitle);
+        fd.append("subtitle_2", form.subtitle_2);
         fd.append(
           "slug",
           form.slug ||
@@ -546,6 +551,16 @@ function App() {
                   />
                 </label>
                 <label>
+                  Mô tả ngắn 2
+                  <input
+                    value={form.subtitle_2}
+                    onChange={(e) =>
+                      setForm({ ...form, subtitle_2: e.target.value })
+                    }
+                    placeholder="Biến khung hình thành dấu ấn của bạn."
+                  />
+                </label>
+                <label>
                   Slug đường dẫn
                   <input
                     value={form.slug}
@@ -703,7 +718,9 @@ function App() {
               <div className="step">
                 BƯỚC 01 <span>— CHỌN ẢNH</span>
               </div>
-              <h2>Biến khung hình thành dấu ấn của bạn.</h2>
+              <h2>
+                {selected.subtitle_2 || "Biến khung hình thành dấu ấn của bạn."}
+              </h2>
               <p className="description">
                 Tải lên một bức ảnh yêu thích để ghép vào khung của chiến dịch.
               </p>
