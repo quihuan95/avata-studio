@@ -236,13 +236,13 @@ function App() {
     const filename = `avatar-${selected.slug}.png`;
 
     try {
-      const blob = await new Promise((resolve, reject) => {
-        canvas.current.toBlob(
-          (result) =>
-            result ? resolve(result) : reject(new Error("Không thể tạo ảnh PNG")),
-          "image/png",
-        );
-      });
+      // Keep image creation synchronous so iOS Safari still considers the
+      // following share call part of the user's button tap.
+      const dataUrl = canvas.current.toDataURL("image/png");
+      const binary = atob(dataUrl.split(",")[1]);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+      const blob = new Blob([bytes], { type: "image/png" });
       const file = new File([blob], filename, { type: "image/png" });
       const isMobile =
         /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
