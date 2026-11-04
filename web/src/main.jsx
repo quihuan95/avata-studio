@@ -231,12 +231,48 @@ function App() {
     setScale(1);
     setAngle(0);
   };
-  const download = () => {
+  const download = async () => {
     if (!userImage) return notify("Hãy tải ảnh cá nhân lên trước");
-    const a = document.createElement("a");
-    a.href = canvas.current.toDataURL("image/png");
-    a.download = `avatar-${selected.slug}.png`;
-    a.click();
+    const filename = `avatar-${selected.slug}.png`;
+
+    try {
+      const blob = await new Promise((resolve, reject) => {
+        canvas.current.toBlob(
+          (result) =>
+            result ? resolve(result) : reject(new Error("Không thể tạo ảnh PNG")),
+          "image/png",
+        );
+      });
+      const file = new File([blob], filename, { type: "image/png" });
+      const isMobile =
+        /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+      // Mobile Safari does not reliably honor a programmatic download link.
+      // Sharing the actual file lets users save it to Photos/Files instead.
+      if (
+        isMobile &&
+        navigator.share &&
+        navigator.canShare?.({ files: [file] })
+      ) {
+        await navigator.share({ files: [file], title: filename });
+      } else {
+        const objectUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = objectUrl;
+        a.download = filename;
+        a.style.display = "none";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+      }
+    } catch (e) {
+      if (e.name === "AbortError") return;
+      notify("Không thể tải ảnh xuống. Hãy thử lại.");
+      return;
+    }
+
     if (backend)
       request(`/campaigns/${encodeURIComponent(selected.slug)}/download`, {
         method: "POST",
